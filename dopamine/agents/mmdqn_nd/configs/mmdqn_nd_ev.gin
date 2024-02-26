@@ -1,0 +1,56 @@
+import numpy
+import dopamine.agents.mmdqn_nd.mmdqn_nd_ev_agent
+import dopamine.agents.dqn.dqn_agent
+import dopamine.discrete_domains.atari_lib
+import dopamine.discrete_domains.run_experiment
+import dopamine.replay_memory.prioritized_replay_buffer
+import dopamine.environment.maze
+# import particle_net
+import gin.tf.external_configurables
+
+mmdqn_nd_ev_agent.bandwidth_linear_annealing_fn.annealing_period = 4000000
+mmdqn_nd_ev_agent.bandwidth_linear_annealing_fn.init_value = 10.
+mmdqn_nd_ev_agent.bandwidth_linear_annealing_fn.final_value = 1.
+
+mmdqn_nd_ev_agent.MMDAgent.gamma = 0.99
+mmdqn_nd_ev_agent.MMDAgent.num_atoms = 200 #300 #200
+mmdqn_nd_ev_agent.MMDAgent.bandwidth_selection_type = 'mixture' #[med/annealing/mixture/const]
+mmdqn_nd_ev_agent.MMDAgent.policy = 'eps_greedy'
+mmdqn_nd_ev_agent.MMDAgent.target_estimator = 'mean'
+mmdqn_nd_ev_agent.MMDAgent.delta = 1.
+mmdqn_nd_ev_agent.MMDAgent.kappa = 0
+mmdqn_nd_ev_agent.MMDAgent.network = @particle_net.NdParticleDQNet
+mmdqn_nd_ev_agent.MMDAgent.update_horizon = 1
+mmdqn_nd_ev_agent.MMDAgent.min_replay_history = 20000
+mmdqn_nd_ev_agent.MMDAgent.update_period = 4
+mmdqn_nd_ev_agent.MMDAgent.target_update_period = 10000
+mmdqn_nd_ev_agent.MMDAgent.epsilon_fn = @dopamine.agents.dqn.dqn_agent.linearly_decaying_epsilon
+mmdqn_nd_ev_agent.MMDAgent.epsilon_train = 0.01
+mmdqn_nd_ev_agent.MMDAgent.epsilon_eval = 0.001
+mmdqn_nd_ev_agent.MMDAgent.epsilon_decay_period = 1000000
+mmdqn_nd_ev_agent.MMDAgent.tf_device = '/gpu:0'
+mmdqn_nd_ev_agent.MMDAgent.optimizer = @tf.train.AdamOptimizer()
+mmdqn_nd_ev_agent.MMDAgent.replay_scheme = 'uniform'
+mmdqn_nd_ev_agent.MMDAgent.debug = True
+
+tf.train.AdamOptimizer.learning_rate = 0.00005 #0.00025 #0.00005
+tf.train.AdamOptimizer.epsilon = 0.0003125 # 0.01 / 32
+
+
+atari_lib.create_atari_environment.game_name = 'Pong'
+# Sticky actions with probability 0.25, as suggested by (Machado et al., 2017).
+atari_lib.create_atari_environment.sticky_actions = True
+
+# some config in original MMDQN repo that is questionable
+# create_atari_environment.sticky_actions = False
+# NoopAtariPreprocessing.terminal_on_life_loss = True
+
+create_agent.agent_name = 'mmdqn_nd_ev'
+Runner.num_iterations = 10
+Runner.training_steps = 250000
+Runner.evaluation_steps = 1000
+Runner.max_steps_per_episode = 27000  # Default max episode length.
+Runner.clip_rewards = True
+
+WrappedPrioritizedReplayBuffer.replay_capacity = 1000000
+WrappedPrioritizedReplayBuffer.batch_size = 32

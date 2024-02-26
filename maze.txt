@@ -1,0 +1,1 @@
+MultiRewardMaze-v0 MultiRewardMaze-v1 MultiRewardMaze-v2
